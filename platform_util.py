@@ -41,12 +41,12 @@ class platform:
                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       stdout,stderr = process.communicate()
       if stderr:
-        print "Error: {}".format(stderr)
+        print("Error: {}".format(stderr))
         exit(1)
       else:
         lscpu_path = stdout.strip()
     except:
-      print "Error!"
+      print("Error!")
 
     #get the lscpu output
     cpu_info = ''
@@ -56,9 +56,9 @@ class platform:
                     stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE)
         stdout,stderr = process.communicate()
-        cpu_info = stdout.split('\n')
+        cpu_info = stdout.decode('utf-8').split('\n')
       except:
-        print "Error!@"
+        print("Error!@")
 
     #parse it
     for line in cpu_info:
