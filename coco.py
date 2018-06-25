@@ -471,6 +471,7 @@ if __name__ == '__main__':
         class TrainConfig(CocoConfig):
             GPU_COUNT = 1
             IMAGES_PER_GPU = int(args.trainbs)
+            # STEPS_PER_EPOCH = int(args.nb)
         config = TrainConfig()
     else:
         class InferenceConfig(CocoConfig):
@@ -529,7 +530,7 @@ if __name__ == '__main__':
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
                     epochs=40,
-                    layers='heads')
+                    layers='heads', warmup=int(args.nw))
 
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
@@ -537,7 +538,7 @@ if __name__ == '__main__':
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
                     epochs=120,
-                    layers='4+')
+                    layers='4+', warmup=int(args.nw))
 
         # Training - Stage 3
         # Fine tune all layers
@@ -545,7 +546,7 @@ if __name__ == '__main__':
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
                     epochs=160,
-                    layers='all')
+                    layers='all', warmup=int(args.nw))
 
     elif args.command == "evaluate":
         # Validation dataset

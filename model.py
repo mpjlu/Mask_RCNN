@@ -41,14 +41,30 @@ assert LooseVersion(keras.__version__) >= LooseVersion('2.0.8')
 #  Utility Functions
 ############################################################
 class TimeHistory(keras.callbacks.Callback):
+    def __init__(self, warmup, batch_size):
+        self.warmup = warmup
+        self.batch_size = batch_size
+
     def on_train_begin(self, logs={}):
         self.time_start = 0
+        self.total_time = 0
+        self.count = 0
 
     def on_batch_begin(self, batch, logs={}):
         self.time_start = time.time()
 
     def on_batch_end(self, batch, logs={}):
-        print("  Elapsed Time: %f (sec/step)  " % (time.time() - self.time_start))
+        self.time_end =  time.time()
+        print("  Elapsed Time: %f (sec/step)  " % (self.time_end - self.time_start))
+        if self.count >= self.warmup:
+            self.total_time += self.time_end - self.time_start
+        self.count += 1
+
+    def on_epoch_end(self, epoch, logs={}):
+        print ("Batchsize: %d" % (self.batch_size))
+        print ("Time spent per BATCH: %.4f ms" % (self.total_time / (self.count - self.warmup) * 1000))
+        print ("Total samples/sec: %.4f samples/s" % ((self.count - self.warmup) * self.batch_size / self.total_time))
+
 
 def log(text, array=None):
     """Prints a text message. And, optionally, if a Numpy array is provided it
@@ -2180,7 +2196,7 @@ class MaskRCNN():
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
 
-    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers):
+    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers, warmup):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
         learning_rate: The learning rate to train with
@@ -2226,7 +2242,7 @@ class MaskRCNN():
                                         histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                             verbose=0, save_weights_only=True),
-            TimeHistory(),
+            TimeHistory(warmup, self.config.BATCH_SIZE),
         ]
 
         # Train
