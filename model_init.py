@@ -81,13 +81,17 @@ class model_initializer:
 
         self.command_prefix = 'numactl --physcpubind=' + cpu + ' --membind=' + str(self.args.socket_id) + self.command_prefix
         self.command_prefix = self.command_prefix + \
+                              ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
-                              ' --num_intra_threads ' + str(self.additional_args.num_intra_threads)
+                              ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
+                              ' --nw 5 --nb 50 --model=coco'
       else:
         self.command_prefix = self.command_prefix + \
-                              ' -cp ' + self.args.checkpoint + \
+                              ' --cp ' + self.args.checkpoint + \
+                              ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
-                              ' --num_intra_threads ' + str(self.additional_args.num_intra_threads)
+                              ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
+                              ' --nw 5 --nb 50 --model=coco'
       self.command_prefix = self.command_prefix + ' --trainbs ' + str(self.args.batch_size)
 
   def run(self):

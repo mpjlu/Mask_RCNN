@@ -442,7 +442,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
-    parser.add_argument('--logs', required=False,
+    parser.add_argument('--cp', required=False,
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
@@ -464,7 +464,7 @@ if __name__ == '__main__':
     print("Model: ", args.model)
     print("Dataset: ", args.dataset)
     print("Year: ", args.year)
-    print("Logs: ", args.logs)
+    print("Logs: ", args.cp)
     print("Auto Download: ", args.download)
 
     # Configurations
@@ -489,10 +489,10 @@ if __name__ == '__main__':
     # Create model
     if args.command == "train":
         model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
+                                  model_dir=args.cp)
     else:
         model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
+                                  model_dir=args.cp)
 
     # Select weights file to load
     if args.model.lower() == "coco":
