@@ -72,6 +72,7 @@ class model_initializer:
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
                               ' --nw 5 --nb 50 --model=coco'
+      self.command_prefix = self.command_prefix + ' --infbs ' + str(self.args.batch_size)
     #do training
     else:
       self.command_prefix = ' python3 coco.py train '
@@ -87,7 +88,7 @@ class model_initializer:
                               ' -cp ' + self.args.checkpoint + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads)
-    self.command_prefix = self.command_prefix + ' --infbs ' + str(self.args.batch_size)
+      self.command_prefix = self.command_prefix + ' --trainbs ' + str(self.args.batch_size)
 
   def run(self):
     print(self.command_prefix) 

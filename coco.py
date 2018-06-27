@@ -30,6 +30,7 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
 import os
 import time
 import numpy as np
+from pdb import set_trace as bp
 
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
 # That's a fork from the original https://github.com/pdollar/coco with a bug
@@ -471,7 +472,7 @@ if __name__ == '__main__':
         class TrainConfig(CocoConfig):
             GPU_COUNT = 1
             IMAGES_PER_GPU = int(args.trainbs)
-            # STEPS_PER_EPOCH = int(args.nb)
+            STEPS_PER_EPOCH = int(args.nb)
         config = TrainConfig()
     else:
         class InferenceConfig(CocoConfig):
@@ -529,24 +530,24 @@ if __name__ == '__main__':
         print("Training network heads")
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=40,
+                    epochs=1, #40,
                     layers='heads', warmup=int(args.nw))
 
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
-        print("Fine tune Resnet stage 4 and up")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=120,
-                    layers='4+', warmup=int(args.nw))
+        #print("Fine tune Resnet stage 4 and up")
+        #model.train(dataset_train, dataset_val,
+        #            learning_rate=config.LEARNING_RATE,
+        #            epochs=1, #120,
+        #            layers='4+', warmup=int(args.nw))
 
         # Training - Stage 3
         # Fine tune all layers
-        print("Fine tune all layers")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 10,
-                    epochs=160,
-                    layers='all', warmup=int(args.nw))
+        #print("Fine tune all layers")
+        #model.train(dataset_train, dataset_val,
+        #            learning_rate=config.LEARNING_RATE / 10,
+        #            epochs=1, #160,
+        #            layers='all', warmup=int(args.nw))
 
     elif args.command == "evaluate":
         # Validation dataset
