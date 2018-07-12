@@ -535,19 +535,19 @@ if __name__ == '__main__':
 
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
-        #print("Fine tune Resnet stage 4 and up")
-        #model.train(dataset_train, dataset_val,
-        #            learning_rate=config.LEARNING_RATE,
-        #            epochs=1, #120,
-        #            layers='4+', warmup=int(args.nw))
+        print("Fine tune Resnet stage 4 and up")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=2, #120,
+                    layers='4+', warmup=int(args.nw))
 
         # Training - Stage 3
         # Fine tune all layers
-        #print("Fine tune all layers")
-        #model.train(dataset_train, dataset_val,
-        #            learning_rate=config.LEARNING_RATE / 10,
-        #            epochs=1, #160,
-        #            layers='all', warmup=int(args.nw))
+        print("Fine tune all layers")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE / 10,
+                    epochs=3, #160,
+                    layers='all', warmup=int(args.nw))
 
     elif args.command == "evaluate":
         # Validation dataset
