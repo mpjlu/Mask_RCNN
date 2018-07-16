@@ -30,6 +30,7 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
 import os
 import time
 import numpy as np
+import subprocess
 from pdb import set_trace as bp
 
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
@@ -466,6 +467,13 @@ if __name__ == '__main__':
     print("Year: ", args.year)
     print("Logs: ", args.cp)
     print("Auto Download: ", args.download)
+
+    # For pycocotools updates
+    ppath = subprocess.Popen(["python3", "-m", "site", "--user-site"],
+                stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+    ppath = ppath[:-1] + "/pycocotools/coco.py"
+    ret = subprocess.Popen(["sed", "-i", "s/unicode/bytes/", ppath],
+                stdout=subprocess.PIPE).communicate()[0]
 
     # Configurations
     if args.command == "train":
