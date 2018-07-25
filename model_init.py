@@ -48,6 +48,14 @@ class model_initializer:
                         help='Specify the number threads between layers',
                         dest="num_inter_threads",
                         default=p.num_cpu_sockets())
+    arg_parser.add_argument('-ac', "--accuracy_check ",
+                        help='Do inference accuracy check.',
+                        dest='accuracy_check',
+                        action='store_true')
+    arg_parser.add_argument('-gp', "--gpu_path",
+                        help='Specify the location of gpu results.',
+                        dest="gpu_path", default=None)
+
     self.additional_args = arg_parser.parse_args(self.custom_args)
 
     if self.args.verbose: 
@@ -73,6 +81,12 @@ class model_initializer:
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
                               ' --nw 5 --nb 50 --model=coco'
       self.command_prefix = self.command_prefix + ' --infbs ' + str(self.args.batch_size)
+
+      if self.additional_args.accuracy_check:
+        if self.additional_args.gpu_path is None:
+          self.command_prefix = self.command_prefix + ' > maskrcnn_cpu.log'
+        else:
+          self.command_prefix = self.command_prefix + ' > maskrcnn_gpu.log'
     #do training
     else:
       self.command_prefix = ' python3 coco.py train '
@@ -100,3 +114,6 @@ class model_initializer:
       if self.args.verbose:
         print("Run model here.", self.command_prefix)
       os.system(self.command_prefix)
+    if self.additional_args.accuracy_check:
+      print("Start accuracy check.")
+      os.system('sh ./accuracy_check.sh')
