@@ -82,11 +82,10 @@ class model_initializer:
                               ' --nw 5 --nb 50 --model=coco'
       self.command_prefix = self.command_prefix + ' --infbs ' + str(self.args.batch_size)
 
-      if self.additional_args.accuracy_check:
-        if self.additional_args.gpu_path is None:
-          self.command_prefix = self.command_prefix + ' > maskrcnn_cpu.log'
-        else:
-          self.command_prefix = self.command_prefix + ' > maskrcnn_gpu.log'
+      if self.additional_args.gpu_path is not None:
+        self.command_prefix = self.command_prefix + ' > maskrcnn_gpu.log'
+      elif self.additional_args.accuracy_check:
+        self.command_prefix = self.command_prefix + ' > maskrcnn_cpu.log'
     #do training
     else:
       self.command_prefix = ' python3 coco.py train '
