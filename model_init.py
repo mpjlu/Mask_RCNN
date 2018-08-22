@@ -5,7 +5,7 @@ from platform_util import platform
 os.environ["KMP_BLOCKTIME"] = "1"
 os.environ["KMP_SETTINGS"] = "1"
 os.environ["KMP_AFFINITY"] = "granularity=fine,verbose,compact,1,0"
-os.environ["KMP_HW_SUBSET=1T"] = "1T"
+os.environ["KMP_HW_SUBSET"] = "1T"
 #os.environ["OMP_PROC_BIND"]="true"
 # DEFAULT_INTEROP_VALUE_ = 2
 class model_initializer:
