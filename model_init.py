@@ -4,7 +4,8 @@ from platform_util import platform
 
 os.environ["KMP_BLOCKTIME"] = "1"
 os.environ["KMP_SETTINGS"] = "1"
-os.environ["KMP_AFFINITY"]= "granularity=fine, compact"
+os.environ["KMP_AFFINITY"] = "granularity=fine,verbose,compact,1,0"
+os.environ["KMP_HW_SUBSET=1T"] = "1T"
 #os.environ["OMP_PROC_BIND"]="true"
 # DEFAULT_INTEROP_VALUE_ = 2
 class model_initializer:
@@ -55,8 +56,12 @@ class model_initializer:
     arg_parser.add_argument('-gp', "--gpu_path",
                         help='Specify the location of gpu results.',
                         dest="gpu_path", default=None)
-
     self.additional_args = arg_parser.parse_args(self.custom_args)
+
+    if not self.args.inference_only:
+      if not self.args.single_socket:
+        self.additional_args.num_inter_threads = 1
+        os.environ["OMP_NUM_THREADS"] = str(p.num_cores_per_socket() * p.num_cpu_sockets())
 
     if self.args.verbose: 
       print('Received these args: {}'.format(self.args))
@@ -68,7 +73,7 @@ class model_initializer:
       if self.args.single_socket:
         cpu = self.getCpu()
          
-        self.command_prefix = 'numactl --physcpubind=' + cpu + ' --membind=' + str(self.args.socket_id) + self.command_prefix
+        self.command_prefix = 'numactl --cpunodebind=' + str(self.args.socket_id) + ' --membind=' + str(self.args.socket_id) + self.command_prefix
         self.command_prefix = self.command_prefix + \
                               ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
@@ -89,10 +94,12 @@ class model_initializer:
     #do training
     else:
       self.command_prefix = ' python3 coco.py train '
+      if self.args.batch_size == -1:
+        self.args.batch_size = 2
       if self.args.single_socket:
         cpu = self.getCpu()
 
-        self.command_prefix = 'numactl --physcpubind=' + cpu + ' --membind=' + str(self.args.socket_id) + self.command_prefix
+        self.command_prefix = 'numactl --cpunodebind=' + str(self.args.socket_id) + ' --membind=' + str(self.args.socket_id) + self.command_prefix
         self.command_prefix = self.command_prefix + \
                               ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
@@ -100,7 +107,7 @@ class model_initializer:
                               ' --nw 5 --nb 50 --model=coco'
       else:
         self.command_prefix = self.command_prefix + \
-                              ' --cp ' + self.args.checkpoint + \
+                              ' --cp=' + self.args.checkpoint + \
                               ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \

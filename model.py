@@ -274,10 +274,6 @@ class ProposalLayer(KE.Layer):
         self.proposal_count = proposal_count
         self.nms_threshold = nms_threshold
         self.anchors = anchors.astype(np.float32)
-        session_config = tf.ConfigProto(intra_op_parallelism_threads=config.NUM_INTRA,\
-                 inter_op_parallelism_threads=config.NUM_INTER)
-        session = tf.Session(config=session_config)
-        K.set_session(session)
 
     def call(self, inputs):
         # Box Scores. Use the foreground class confidence. [Batch, num_rois, 1]
@@ -1786,6 +1782,11 @@ class MaskRCNN():
         model_dir: Directory to save training logs and trained weights
         """
         assert mode in ['training', 'inference']
+        session_config = tf.ConfigProto(intra_op_parallelism_threads=config.NUM_INTRA,\
+                 inter_op_parallelism_threads=config.NUM_INTER)
+        session = tf.Session(config=session_config)
+        K.set_session(session)
+
         self.mode = mode
         self.config = config
         self.model_dir = model_dir
