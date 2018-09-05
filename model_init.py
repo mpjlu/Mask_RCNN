@@ -60,8 +60,12 @@ class model_initializer:
 
     if not self.args.inference_only:
       if not self.args.single_socket:
-        self.additional_args.num_inter_threads = 1
-        os.environ["OMP_NUM_THREADS"] = str(p.num_cores_per_socket() * p.num_cpu_sockets())
+        if not self.args.run_gpu:
+          self.additional_args.num_inter_threads = 1
+          os.environ["OMP_NUM_THREADS"] = str(p.num_cores_per_socket() * p.num_cpu_sockets())
+        else:
+          self.additional_args.num_inter_threads = 0
+          self.additional_args.num_intra_threads = 0
 
     if self.args.verbose: 
       print('Received these args: {}'.format(self.args))
@@ -104,14 +108,14 @@ class model_initializer:
                               ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
-                              ' --nw 5 --nb 50 --model=coco'
+                              ' --nw 40 --nb 100 --model=coco'
       else:
         self.command_prefix = self.command_prefix + \
                               ' --cp=' + self.args.checkpoint + \
                               ' --dataset=' + str(self.args.data_location) + \
                               ' --num_inter_threads ' + str(self.additional_args.num_inter_threads) + \
                               ' --num_intra_threads ' + str(self.additional_args.num_intra_threads) + \
-                              ' --nw 5 --nb 50 --model=coco'
+                              ' --nw 40 --nb 100 --model=coco'
       self.command_prefix = self.command_prefix + ' --trainbs ' + str(self.args.batch_size)
 
   def run(self):

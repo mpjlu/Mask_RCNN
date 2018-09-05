@@ -67,6 +67,10 @@ class benchmark_util:
                                 help='Print verbose information.',
                                 dest='verbose',
                                 action='store_true')
+        arg_parser.add_argument('-rg', "--run_gpu",
+                                help='Indicate whether gpu path.',
+                                dest='run_gpu',
+                                action='store_true')
         args, unknown = arg_parser.parse_known_args()
         mi = model_initializer(args, unknown)
         mi.run()
