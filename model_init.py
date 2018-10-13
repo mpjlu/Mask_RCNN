@@ -63,6 +63,8 @@ class model_initializer:
         if not self.args.run_gpu:
           self.additional_args.num_inter_threads = 1
           os.environ["OMP_NUM_THREADS"] = str(p.num_cores_per_socket() * p.num_cpu_sockets())
+          os.environ["TF_MKL_OPTIMIZE_PRIMITVE_MEMUSE"] = "false"
+          del os.environ["KMP_BLOCKTIME"]
         else:
           self.additional_args.num_inter_threads = 0
           self.additional_args.num_intra_threads = 0

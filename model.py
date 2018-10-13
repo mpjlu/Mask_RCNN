@@ -1786,6 +1786,7 @@ class MaskRCNN():
                  inter_op_parallelism_threads=config.NUM_INTER)
         session = tf.Session(config=session_config)
         K.set_session(session)
+        K.set_image_data_format('channels_last')
 
         self.mode = mode
         self.config = config
