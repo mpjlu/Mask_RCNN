@@ -338,7 +338,7 @@ def build_coco_results(dataset, image_ids, rois, class_ids, scores, masks):
     return results
 
 
-def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, warmup=0, image_ids=None):
+def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, warmup=0, image_ids=None, profile=False):
     """Runs official COCO evaluation.
     dataset: A Dataset object with valiadtion data
     eval_type: "bbox" or "segm" for bounding box or segmentation evaluation
@@ -360,32 +360,66 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, warmup=0, ima
     t_start = time.time()
 
     results = []
-    for i, image_id in enumerate(image_ids):
-        # Load image
-        # image = dataset.load_image(image_id)
+    if profile is True:
+        import tensorflow as tf
+        builder = tf.profiler.ProfileOptionBuilder
+        opts = builder(builder.time_and_memory()).order_by('micros').with_max_depth(20).build()
+        #with tf.contrib.tfprof.ProfileContext("/home/pmeng/lm1b_profile/") as pctx:
+        with tf.contrib.tfprof.ProfileContext('/home/pmeng/lm1b_profile/') as pctx:
+            pctx.add_auto_profiling('op', opts, [5, 7, 8, 10, 21, 31])
+            for i, image_id in enumerate(image_ids):
+                # Load image
+                # image = dataset.load_image(image_id)
 
-        if (i%config.BATCH_SIZE!=0):
-            continue;
-        image_list=[];
-        for j in range(0,config.BATCH_SIZE):
-            print("i image_id",i+j, image_id+j)
-            image = dataset.load_image(image_id+j)
-            image_list.append(image)
+                if (i%config.BATCH_SIZE!=0):
+                    continue;
+                image_list=[];
+                for j in range(0,config.BATCH_SIZE):
+                    print("i image_id",i+j, image_id+j)
+                    image = dataset.load_image(image_id+j)
+                    image_list.append(image)
 
-        # Run detection
-        t = time.time()
-        r = model.detect(image_list, verbose=0)[0]
-        t1 = time.time() - t
-        #t_prediction += (time.time() - t)
-        if (i/config.BATCH_SIZE>=warmup):
-            t_prediction += t1
-        print("pred time:",i,t1)
+                # Run detection
+                t = time.time()
+                r = model.detect(image_list, verbose=0)[0]
+                t1 = time.time() - t
+                #t_prediction += (time.time() - t)
+                if (i/config.BATCH_SIZE>=warmup):
+                    t_prediction += t1
+                    print("pred time:",i,t1)
 
-        # Convert results to COCO format
-        image_results = build_coco_results(dataset, coco_image_ids[i:i + 1],
-                                           r["rois"], r["class_ids"],
-                                           r["scores"], r["masks"])
-        results.extend(image_results)
+                # Convert results to COCO format
+                image_results = build_coco_results(dataset, coco_image_ids[i:i + 1],
+                                                   r["rois"], r["class_ids"],
+                                                   r["scores"], r["masks"])
+                results.extend(image_results)
+    else:
+        for i, image_id in enumerate(image_ids):
+            # Load image
+            # image = dataset.load_image(image_id)
+
+            if (i%config.BATCH_SIZE!=0):
+                continue;
+            image_list=[];
+            for j in range(0,config.BATCH_SIZE):
+                print("i image_id",i+j, image_id+j)
+                image = dataset.load_image(image_id+j)
+                image_list.append(image)
+
+            # Run detection
+            t = time.time()
+            r = model.detect(image_list, verbose=0)[0]
+            t1 = time.time() - t
+            #t_prediction += (time.time() - t)
+            if (i/config.BATCH_SIZE>=warmup):
+                t_prediction += t1
+                print("pred time:",i,t1)
+
+            # Convert results to COCO format
+            image_results = build_coco_results(dataset, coco_image_ids[i:i + 1],
+                                               r["rois"], r["class_ids"],
+                                               r["scores"], r["masks"])
+            results.extend(image_results)
 
     # Load results. This modifies results with additional attributes.
     coco_results = coco.loadRes(results)
@@ -407,6 +441,33 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, warmup=0, ima
 #  Training
 ############################################################
 
+def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
+    """
+Freezes the state of a session into a pruned computation graph.
+Creates a new computation graph where variable nodes are replaced by
+constants taking their current value in the session. The new graph will be
+pruned so subgraphs that are not necessary to compute the requested
+outputs are removed.
+@param session The TensorFlow session to be frozen.
+@param keep_var_names A list of variable names that should not be frozen,
+or None to freeze all the variables in the graph.
+@param output_names Names of the relevant graph outputs.
+@param clear_devices Remove the device directives from the graph for better portability.
+@return The frozen graph definition.
+"""
+    import tensorflow as tf
+    graph = session.graph
+    with graph.as_default():
+        freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        output_names = output_names or []
+        output_names += [v.op.name for v in tf.global_variables()]
+        input_graph_def = graph.as_graph_def()
+        if clear_devices:
+            for node in input_graph_def.node:
+                node.device = ""
+        frozen_graph = tf.graph_util.convert_variables_to_constants(
+            session, input_graph_def, output_names, freeze_var_names)
+        return frozen_graph
 
 if __name__ == '__main__':
     import argparse
@@ -448,7 +509,7 @@ if __name__ == '__main__':
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
     parser.add_argument('--nb', required=False,
-                        default=50,
+                        default=1,
                         metavar="<image count>",
                         help='Images to use for evaluation (default=500)')
     parser.add_argument('--nw', required=False,
@@ -459,6 +520,11 @@ if __name__ == '__main__':
                         default=False,
                         metavar="<True|False>",
                         help='Automatically download and unzip MS-COCO files (default=False)',
+                        type=bool)
+    parser.add_argument('--profile', required=False,
+                        default=False,
+                        metavar="<True|False>",
+                        help='profile or not',
                         type=bool)
     args = parser.parse_args()
     print("Command: ", args.command)
@@ -518,6 +584,15 @@ if __name__ == '__main__':
     print("Loading weights ", model_path)
     model.load_weights(model_path, by_name=True)
 
+    from keras import backend as K
+
+    # Create, compile and train model...
+    '''
+    import tensorflow as tf
+    frozen_graph = freeze_session(K.get_session(),
+                                      output_names=[out.op.name for out in model.keras_model.outputs])
+    tf.train.write_graph(frozen_graph, ".", "maskrcnn.pb", as_text=False)
+    '''
     # Train or evaluate
     if args.command == "train":
         # Training dataset. Use the training set and 35K from the
@@ -563,7 +638,7 @@ if __name__ == '__main__':
         coco = dataset_val.load_coco(args.dataset, "minival", year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.nb))
-        evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.nb), warmup=int(args.nw))
+        evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.nb), warmup=int(args.nw), profile=args.profile)
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'evaluate'".format(args.command))

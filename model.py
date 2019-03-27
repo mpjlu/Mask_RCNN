@@ -2400,10 +2400,49 @@ class MaskRCNN():
             log("molded_images", molded_images)
             log("image_metas", image_metas)
         # Run object detection
+        #TODO
+        #*********************************************************************************
+
+        import tensorflow as tf
+        import tensorflow.contrib.tensorrt as trt
+        graph = tf.Graph()
+        with graph.as_default():
+            with tf.Session() as sess:
+                with tf.gfile.GFile("./maskrcnn.pb", "rb") as f:
+                    graph_def = tf.GraphDef()
+                    graph_def.ParseFromString(f.read())
+                trt_graph = trt.create_inference_graph(
+                        input_graph_def=graph_def,
+                        outputs=['mrcnn_detection/Reshape_1:0','mrcnn_class/Reshape_1:0','mrcnn_bbox/Reshape:0','mrcnn_mask/Reshape_1:0','ROI/packed_2:0','rpn_class/concat:0', 'rpn_bbox/concat:0'],
+                        #outputs=['import/mrcnn_detection/Reshape_1:0','import/mrcnn_class/Reshape_1:0','import/mrcnn_bbox/Reshape:0','import/mrcnn_mask/Reshape_1:0','import/ROI/packed_2:0','import/rpn_class/concat:0', 'import/rpn_bbox/concat:0'],
+                        max_batch_size=1,
+                        max_workspace_size_bytes= (1 << 30),
+                        precision_mode="FP16")
+                _ = tf.import_graph_def(trt_graph)
+                #tf.summary.FileWriter("tensor_board", sess.graph) 
+                img_ph = sess.graph.get_tensor_by_name('import/input_image:0')
+                img_meta_ph = sess.graph.get_tensor_by_name('import/input_image_meta:0')
+                detectionsT = sess.graph.get_tensor_by_name('import/mrcnn_detection/Reshape_1:0')
+                mrcnn_classT = sess.graph.get_tensor_by_name('import/mrcnn_class/Reshape_1:0')
+                mrcnn_bboxT = sess.graph.get_tensor_by_name('import/mrcnn_bbox/Reshape:0')
+                mrcnn_maskT = sess.graph.get_tensor_by_name('import/mrcnn_mask/Reshape_1:0')
+                roisT = sess.graph.get_tensor_by_name('import/ROI/packed_2:0')
+                rpn_classT = sess.graph.get_tensor_by_name('import/rpn_class/concat:0')
+                rpn_bboxT = sess.graph.get_tensor_by_name('import/rpn_bbox/concat:0')
+                
+                detections, mrcnn_class, mrcnn_bbox, mrcnn_mask, \
+                rois, rpn_class, rpn_bbox =\
+                sess.run([detectionsT, mrcnn_classT, mrcnn_bboxT, mrcnn_maskT, roisT, rpn_classT, rpn_bboxT], feed_dict={img_ph:molded_images, img_meta_ph:image_metas})
+
+        #END
+        #***************************************************************************************
+        ''' 
         detections, mrcnn_class, mrcnn_bbox, mrcnn_mask, \
             rois, rpn_class, rpn_bbox =\
             self.keras_model.predict([molded_images, image_metas], verbose=0)
         # Process detections
+        '''
+        
         results = []
         for i, image in enumerate(images):
             final_rois, final_class_ids, final_scores, final_masks =\
